@@ -14,47 +14,45 @@ function SubmitBtn({ onPress }) {
 }
 
 export default function AddEntry() {
-  const [run, updateRun] = useState(0);
-  const [bike, updateBike] = useState(0);
-  const [swim, updateSwim] = useState(0);
-  const [sleep, updateSleep] = useState(0);
-  const [eat, updateEat] = useState(0);
+  const [allMetrics, updateAllMetrics] = useState({
+    run: 0,
+    bike: 0,
+    swim: 0,
+    sleep: 0,
+    eat: 0,
+  });
 
   const increment = (metric) => {
     const { max, step } = getMetricMetaInfo(metric);
 
-    const count = metric + step;
+    updateAllMetrics((prevState) => {
+      const count = allMetrics[metric] + step;
 
-    switch (metric) {
-      case "run":
-        return updateRun(count > max ? max : count);
-      case "bike":
-        return updateBike(count > max ? max : count);
-      case "swim":
-        return updateSwim(count > max ? max : count);
-    }
+      return {
+        ...prevState,
+        [metric]: count > max ? max : count,
+      };
+    });
   };
 
   const decrement = (metric) => {
-    const count = metric - getMetricMetaInfo(metric).step;
+    updateAllMetrics((prevState) => {
+      const count = allMetrics[metric] - getMetricMetaInfo(metric).step;
 
-    switch (metric) {
-      case "run":
-        return updateRun(count < 0 ? 0 : count);
-      case "bike":
-        return updateBike(count < 0 ? 0 : count);
-      case "swim":
-        return updateSwim(count < 0 ? 0 : count);
-    }
+      return {
+        ...prevState,
+        [metric]: count < 0 ? 0 : count,
+      };
+    });
   };
 
   const slide = (metric, value) => {
-    switch (metric) {
-      case "sleep":
-        return updateSleep(value);
-      case "eat":
-        return updateEat(value);
-    }
+    updateAllMetrics((prevState) => {
+      return {
+        ...prevState,
+        [metric]: value,
+      };
+    });
   };
 
   const submit = () => {
@@ -62,11 +60,13 @@ export default function AddEntry() {
 
     // Update Redux
 
-    updateRun(0);
-    updateBike(0);
-    updateSwim(0);
-    updateSleep(0);
-    updateEat(0);
+    updateAllMetrics((prevState) => ({
+      run: 0,
+      bike: 0,
+      swim: 0,
+      sleep: 0,
+      eat: 0,
+    }));
 
     // Navigate to home
 
@@ -82,7 +82,7 @@ export default function AddEntry() {
       <DateHeader date={new Date().toLocaleDateString()} />
       {Object.keys(metaInfo).map((key) => {
         const { getIcon, type, ...rest } = metaInfo[key];
-        const value = key;
+        const value = allMetrics[key];
 
         return (
           <Text key={key}>

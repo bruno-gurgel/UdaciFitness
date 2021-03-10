@@ -11,6 +11,7 @@ import UdaciSlider from "./UdaciSlider";
 import UdaciSteppers from "./UdaciSteppers";
 import { Ionicons } from "@expo/vector-icons";
 import TextButton from "./TextButton";
+import { removeEntry, submitEntry } from "../utils/api";
 
 function SubmitBtn({ onPress }) {
   return (
@@ -77,7 +78,7 @@ export default function AddEntry(props) {
 
     // Navigate to home
 
-    // Save to 'DB'
+    submitEntry({ key, entry: allMetrics });
 
     // Clear local notifications
   };
@@ -89,7 +90,7 @@ export default function AddEntry(props) {
 
     // Navigate to home
 
-    // Save to 'DB'
+    removeEntry({ key });
 
     // Clear local notifications
   };

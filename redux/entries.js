@@ -8,3 +8,5 @@ const entriesSlice = createSlice({
 		doAddEntry: (state, action) => state + action.payload,
 	},
 });
+
+export default entriesSlice.reducer;

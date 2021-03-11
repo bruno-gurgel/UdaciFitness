@@ -9,4 +9,8 @@ const entriesSlice = createSlice({
 	},
 });
 
+export const { doReceiveEntries, doAddEntry } = entriesSlice.actions;
+
+export const getEntries = (state) => state.entries;
+
 export default entriesSlice.reducer;

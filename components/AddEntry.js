@@ -1,137 +1,158 @@
 import React, { useState } from "react";
-import {
-  ProgressViewIOSComponent,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { getMetricMetaInfo, timeToString } from "../utils/helpers";
+import { Text, TouchableOpacity, View } from "react-native";
+import { getDailyReminderValue, getMetricMetaInfo, timeToString } from "../utils/helpers";
 import DateHeader from "./DateHeader";
 import UdaciSlider from "./UdaciSlider";
 import UdaciSteppers from "./UdaciSteppers";
 import { Ionicons } from "@expo/vector-icons";
 import TextButton from "./TextButton";
 import { removeEntry, submitEntry } from "../utils/api";
+import { useDispatch, useSelector } from "react-redux";
+import { addEntry } from "../redux/actions";
+import { getEntries } from "../redux/entries";
 
 function SubmitBtn({ onPress }) {
-  return (
-    <TouchableOpacity onPress={onPress}>
-      <Text>Submit</Text>
-    </TouchableOpacity>
-  );
+	return (
+		<TouchableOpacity onPress={onPress}>
+			<Text>Submit</Text>
+		</TouchableOpacity>
+	);
 }
 
 export default function AddEntry(props) {
-  const [allMetrics, updateAllMetrics] = useState({
-    run: 0,
-    bike: 0,
-    swim: 0,
-    sleep: 0,
-    eat: 0,
-  });
+	const [allMetrics, updateAllMetrics] = useState({
+		run: 0,
+		bike: 0,
+		swim: 0,
+		sleep: 0,
+		eat: 0,
+	});
 
-  const increment = (metric) => {
-    const { max, step } = getMetricMetaInfo(metric);
+	const [alreadyLogged, updateAlreadyLogged] = useState(false);
 
-    updateAllMetrics((prevState) => {
-      const count = allMetrics[metric] + step;
+	const checkIfIsLogged = () => {
+		const entries = useSelector(getEntries());
+		const key = timeToString();
+		if (entries[key] && typeof entries[key].today === "undefined") {
+			updateAlreadyLogged(true);
+		}
+	};
 
-      return {
-        ...prevState,
-        [metric]: count > max ? max : count,
-      };
-    });
-  };
+	const increment = (metric) => {
+		const { max, step } = getMetricMetaInfo(metric);
 
-  const decrement = (metric) => {
-    updateAllMetrics((prevState) => {
-      const count = allMetrics[metric] - getMetricMetaInfo(metric).step;
+		updateAllMetrics((prevState) => {
+			const count = allMetrics[metric] + step;
 
-      return {
-        ...prevState,
-        [metric]: count < 0 ? 0 : count,
-      };
-    });
-  };
+			return {
+				...prevState,
+				[metric]: count > max ? max : count,
+			};
+		});
+	};
 
-  const slide = (metric, value) => {
-    updateAllMetrics((prevState) => {
-      return {
-        ...prevState,
-        [metric]: value,
-      };
-    });
-  };
+	const decrement = (metric) => {
+		updateAllMetrics((prevState) => {
+			const count = allMetrics[metric] - getMetricMetaInfo(metric).step;
 
-  const submit = () => {
-    const key = timeToString();
+			return {
+				...prevState,
+				[metric]: count < 0 ? 0 : count,
+			};
+		});
+	};
 
-    // Update Redux
+	const slide = (metric, value) => {
+		updateAllMetrics((prevState) => {
+			return {
+				...prevState,
+				[metric]: value,
+			};
+		});
+	};
 
-    updateAllMetrics({
-      run: 0,
-      bike: 0,
-      swim: 0,
-      sleep: 0,
-      eat: 0,
-    });
+	const submit = () => {
+		const key = timeToString();
 
-    // Navigate to home
+		const dispatch = useDispatch();
 
-    submitEntry({ key, entry: allMetrics });
+		dispatch(
+			addEntry({
+				[key]: allMetrics,
+			})
+		);
 
-    // Clear local notifications
-  };
+		updateAllMetrics({
+			run: 0,
+			bike: 0,
+			swim: 0,
+			sleep: 0,
+			eat: 0,
+		});
 
-  const metaInfo = getMetricMetaInfo();
+		// Navigate to home
 
-  const reset = () => {
-    const key = timeToString();
+		submitEntry({ key, entry: allMetrics });
 
-    // Navigate to home
+		// Clear local notifications
+	};
 
-    removeEntry({ key });
+	const metaInfo = getMetricMetaInfo();
 
-    // Clear local notifications
-  };
-  if (props.alreadyLogged) {
-    return (
-      <View>
-        <Ionicons name="ios-happy-outline" size={100} />
-        <Text>You already logged your information for today</Text>
-        <TextButton onPress={reset}>Reset</TextButton>
-      </View>
-    );
-  }
+	const reset = () => {
+		const key = timeToString();
+		const dispatch = useDispatch();
 
-  return (
-    <View>
-      <DateHeader date={new Date().toLocaleDateString()} />
-      {Object.keys(metaInfo).map((key) => {
-        const { getIcon, type, ...rest } = metaInfo[key];
-        const value = allMetrics[key];
+		dispatch(
+			addEntry({
+				[key]: getDailyReminderValue(),
+			})
+		);
 
-        return (
-          <Text key={key}>
-            {getIcon()}{" "}
-            {type === "slider" ? (
-              <UdaciSlider
-                value={value}
-                onChange={(value) => slide(key, value)}
-                {...rest}
-              />
-            ) : (
-              <UdaciSteppers
-                value={value}
-                onIncrement={() => increment(key)}
-                onDecrement={() => decrement(key)}
-                {...rest}
-              />
-            )}
-          </Text>
-        );
-      })}
-      <SubmitBtn onPress={submit} />
-    </View>
-  );
+		// Navigate to home
+
+		removeEntry({ key });
+
+		// Clear local notifications
+	};
+	if (alreadyLogged) {
+		return (
+			<View>
+				<Ionicons name="ios-happy-outline" size={100} />
+				<Text>You already logged your information for today</Text>
+				<TextButton onPress={reset}>Reset</TextButton>
+			</View>
+		);
+	}
+
+	return (
+		<View>
+			<DateHeader date={new Date().toLocaleDateString()} />
+			{Object.keys(metaInfo).map((key) => {
+				const { getIcon, type, ...rest } = metaInfo[key];
+				const value = allMetrics[key];
+
+				return (
+					<Text key={key}>
+						{getIcon()}{" "}
+						{type === "slider" ? (
+							<UdaciSlider
+								value={value}
+								onChange={(value) => slide(key, value)}
+								{...rest}
+							/>
+						) : (
+							<UdaciSteppers
+								value={value}
+								onIncrement={() => increment(key)}
+								onDecrement={() => decrement(key)}
+								{...rest}
+							/>
+						)}
+					</Text>
+				);
+			})}
+			<SubmitBtn onPress={submit} />
+		</View>
+	);
 }
